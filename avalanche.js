@@ -3,8 +3,8 @@ document.addEventListener('keyup', handleUserInput);
 
 var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
-var maxGravity = 1.5;
-var minGravity = .7;
+var maxGravity = 3;
+var minGravity = 1.5;
 var player = {
   direction: {
     x: 0
@@ -14,11 +14,9 @@ var player = {
   }
 }
 
-var fallingTriangles = [
-  {x: 390, y: 367.953, gravity: 1.0339},
-  {x: 518, y: 642.834, gravity: 0.8529},
-];
-var loop = null
+var fallingTriangles = [];
+
+
 function initializeApp(){
   document.body.append(canvas);
 
@@ -26,29 +24,31 @@ function initializeApp(){
   canvas.height = 700;
   clearCanvas();
 
-  setInterval(update, 5);
+  requestAnimationFrame(update);
+
 }
+
 var count = 0;
+/* Main game loop */
 function update(){
+  requestAnimationFrame(update);
   count++;
-  if(count % 70 === 0){
+  if(count % 50 === 0){
     createTriangle();
   }
-  //main loop
+
   clearCanvas();
-    // createTriangle();
   moveTriangles();
 }
 function handleUserInput(){
   // handle input
 }
-function moveTriangles(x, y){
+function moveTriangles(){
   for(var i = 0; i< fallingTriangles.length; i++){
     var x = fallingTriangles[i].x;
     var y = fallingTriangles[i].y;
     if(y > canvas.height){
       fallingTriangles.splice(i, 1);
-      console.log('element removed')
     }
     else{
       fallingTriangles[i].y += fallingTriangles[i].gravity;
@@ -62,7 +62,20 @@ function moveTriangles(x, y){
   }
 }
 function createTriangle(){
-  var startingX = Math.floor(Math.random() * canvas.width);
+  console.log(fallingTriangles);
+  var startingX = null;
+  var validNum = null;
+  do{
+    validNum = true;
+    startingX = Math.floor(Math.random() * canvas.width);
+    for(var i = 0; i < fallingTriangles.length; i++){
+      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x){
+        console.log('invalid x');
+        validNum = false;
+      }
+    }
+  }while(!validNum);
+
   var startingY = -100;
   var gravity = Math.random() * (maxGravity - minGravity) + minGravity;
   context.beginPath();
@@ -72,6 +85,7 @@ function createTriangle(){
   context.fillStyle = 'black';
   context.fill();
   fallingTriangles.push({x: startingX, y: startingY, gravity: gravity});
+  console.log(fallingTriangles);
 }
 function clearCanvas() {
   context.fillStyle = 'white';
