@@ -1,21 +1,20 @@
 document.addEventListener('DOMContentLoaded', initializeApp);
 document.addEventListener('keydown', handleUserInput);
-// document.addEventListener('keyup', playerDirectionDecay);
+document.addEventListener('keyup', playerDirectionDecay);
 
 var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
-var maxGravity = 5;
-var minGravity = 3;
+
+var keyLeft = false;
+var keyRight = false;
+var acceleration = 3.5;
+var decay = 0;
+
+var maxGravity = 8;
+var minGravity = 5;
 var player = {
-  position: {
-    x: 200, //initial position
-  },
-  direction: {
-    x: 3
-  },
-  changeDirection: function(direction){
-    this.x = this.x * direction;
-  }
+  position:200, //initial position
+  direction: 'left',
 }
 
 var fallingTriangles = [];
@@ -37,54 +36,80 @@ var count = 0;
 function update(){
   requestAnimationFrame(update);
   count++;
-  if(count === 0){
-    createPlayer();
-  }
   if(count % 20 === 0){
     createTriangle();
   }
-
   clearCanvas();
   movePlayer();
   moveTriangles();
   drawGrass();
 }
 
+function playerDirectionDecay(input){
+  if(input.code === 'ArrowLeft'){
+    keyLeft = false;
+  }
+  else if(input.code === 'ArrowRight'){
+    keyRight = false;
+  }
+}
 
 function handleUserInput(input){
   console.log('change direction')
-  if(input.code === "ArrowLeft" && player.direction != -1){
-    player.direction.x = -3;
+  if(input.code === "ArrowLeft"){
+    keyLeft = true;
+    player.direction = 'Left';
   }
-  else if(input.code === "ArrowRight" && player.direction != 1){
-    player.direction.x = 3;
+  else if(input.code === "ArrowRight"){
+    keyRight = true;
+    player.direction = 'Right';
   }
+}
 
+function checkOutOfBounds(){
+  if(player.position > canvas.width - 8 && player.direction === 'Right'){
+    console.log('out of bounds');
+    return true;
+  }
+  else if(player.position < 8 && player.direction === 'Left'){
+    console.log('out of bounds');
+    return true;
+  }
+  return false;
 }
 function movePlayer(){
-  if(player.position.x > canvas.width - 8 && player.direction.x > 0){
-    player.direction.x = 0;
+  if(!checkOutOfBounds()){
+
+    if(keyLeft){
+      decay = acceleration;
+      player.position  -= acceleration;
+    }
+    else if(keyRight){
+      decay = acceleration;
+      player.position += acceleration;
+    }
+    else if(!keyRight && !keyLeft){
+      if(player.direction === 'Left'){
+        player.position -= decay;
+      }
+      else if (player.direction === 'Right'){
+        player.position += decay;
+      }
+      if(decay > 0){
+        decay -= .1;
+      }
+    }
   }
-  else if(player.position.x < 8 && player.direction.x < 0){
-    player.direction.x = 0;
-  }
 
-  player.position.x += player.direction.x;
-
-  context.beginPath();
-  context.arc(player.position.x, canvas.height - 70, 12, 0, 2 * Math.PI)
-  context.fillStyle = 'black';
-  context.fill();
-  context.fillRect(player.position.x - 2 , canvas.height - 60, 5, 25);
-
-}
-function createPlayer(){
   context.beginPath();
   context.arc(player.position, canvas.height - 70, 12, 0, 2 * Math.PI)
   context.fillStyle = 'black';
   context.fill();
-  context.fillRect(player.position - 2, canvas.height - 60, 5, 25);
+  context.fillRect(player.position - 2 , canvas.height - 60, 5, 25);
+
 }
+
+
 function moveTriangles(){
   for(var i = 0; i< fallingTriangles.length; i++){
     var x = fallingTriangles[i].x;
@@ -103,6 +128,7 @@ function moveTriangles(){
     }
   }
 }
+
 function createTriangle(){
   var startingX = null;
   var validNum = null;
@@ -131,6 +157,7 @@ function createTriangle(){
   context.fill();
   fallingTriangles.push({x: startingX, y: startingY, gravity: gravity});
 }
+
 function clearCanvas() {
   context.fillStyle = 'white';
   context.strokeStyle = 'black';
@@ -138,6 +165,7 @@ function clearCanvas() {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.strokeRect(0, 0, canvas.width, canvas.height);
 }
+
 function drawGrass(){
   context.fillStyle = 'green';
   context.fillRect(0, canvas.height - 10, canvas.width, 10);
