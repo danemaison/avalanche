@@ -1,16 +1,20 @@
 document.addEventListener('DOMContentLoaded', initializeApp);
-document.addEventListener('keyup', handleUserInput);
+document.addEventListener('keydown', handleUserInput);
+// document.addEventListener('keyup', playerDirectionDecay);
 
 var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
-var maxGravity = 3;
-var minGravity = 1.5;
+var maxGravity = 5;
+var minGravity = 3;
 var player = {
+  position: {
+    x: 200, //initial position
+  },
   direction: {
-    x: 0
+    x: 3
   },
   changeDirection: function(direction){
-    // change direction
+    this.x = this.x * direction;
   }
 }
 
@@ -33,15 +37,53 @@ var count = 0;
 function update(){
   requestAnimationFrame(update);
   count++;
-  if(count % 50 === 0){
+  if(count === 0){
+    createPlayer();
+  }
+  if(count % 20 === 0){
     createTriangle();
   }
 
   clearCanvas();
+  movePlayer();
   moveTriangles();
+  drawGrass();
 }
-function handleUserInput(){
-  // handle input
+
+
+function handleUserInput(input){
+  console.log('change direction')
+  if(input.code === "ArrowLeft" && player.direction != -1){
+    player.direction.x = -3;
+  }
+  else if(input.code === "ArrowRight" && player.direction != 1){
+    player.direction.x = 3;
+  }
+
+}
+function movePlayer(){
+  if(player.position.x > canvas.width - 8 && player.direction.x > 0){
+    player.direction.x = 0;
+  }
+  else if(player.position.x < 8 && player.direction.x < 0){
+    player.direction.x = 0;
+  }
+
+  player.position.x += player.direction.x;
+
+  context.beginPath();
+  context.arc(player.position.x, canvas.height - 70, 12, 0, 2 * Math.PI)
+  context.fillStyle = 'black';
+  context.fill();
+  context.fillRect(player.position.x - 2 , canvas.height - 60, 5, 25);
+
+}
+function createPlayer(){
+  context.beginPath();
+  context.arc(player.position, canvas.height - 70, 12, 0, 2 * Math.PI)
+  context.fillStyle = 'black';
+  context.fill();
+  context.fillRect(player.position - 2, canvas.height - 60, 5, 25);
 }
 function moveTriangles(){
   for(var i = 0; i< fallingTriangles.length; i++){
@@ -56,21 +98,24 @@ function moveTriangles(){
       context.moveTo(x, y);
       context.lineTo(x + 25, y + 50);
       context.lineTo(x + 50, y);
-      context.fillStyle = 'black';
+      context.fillStyle = 'grey';
       context.fill();
     }
   }
 }
 function createTriangle(){
-  console.log(fallingTriangles);
   var startingX = null;
   var validNum = null;
+  var generatorCount = 0;
   do{
+    generatorCount++;
+    if(generatorCount > 1000){
+      break;
+    }
     validNum = true;
     startingX = Math.floor(Math.random() * canvas.width);
     for(var i = 0; i < fallingTriangles.length; i++){
-      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x){
-        console.log('invalid x');
+      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x - 50){
         validNum = false;
       }
     }
@@ -85,7 +130,6 @@ function createTriangle(){
   context.fillStyle = 'black';
   context.fill();
   fallingTriangles.push({x: startingX, y: startingY, gravity: gravity});
-  console.log(fallingTriangles);
 }
 function clearCanvas() {
   context.fillStyle = 'white';
@@ -95,7 +139,8 @@ function clearCanvas() {
   context.strokeRect(0, 0, canvas.width, canvas.height);
 }
 function drawGrass(){
-
+  context.fillStyle = 'green';
+  context.fillRect(0, canvas.height - 10, canvas.width, 10);
 }
 
 function randomNum(){
