@@ -6,25 +6,35 @@ var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
 canvas.width = 650;
 canvas.height = 650;
-var points = 0;
+
 var keyLeft = false;
 var keyRight = false;
+
+var points = 0;
+
 var acceleration = 5.5;
 var decay = 0;
-var level = 1;
-var gravityMultiplier = 0;
+
+// var gravityMultiplier = 0;
 var freezeTimer = 0;
+var invincibleTimer = 0;
+var invincible = false;
+
+var level = 1;
 var maxGravity = 13.5;
 var minGravity = 10;
+
+var fallingPowerUps = [];
+var fallingTriangles = [];
+
 var player = {
-  headColor: 'black',
+  color: 'black',
   height: canvas.height - 130,
   position: 200, //initial position
   direction: 'left',
 }
 
-var fallingPowerUps = [];
-var fallingTriangles = [];
+
 
 
 function initializeApp() {
@@ -37,75 +47,37 @@ function initializeApp() {
   clearCanvas();
 }
 
-function setLevel(){
-  if(points < 2500){
-    level = 1;
-    maxGravity = 13.5;
-    minGravity = 10;
-  }
-  else if (points < 5000){
-    level = 2;
-    maxGravity = 14.5;
-    minGravity = 11.5;
-  }
-  else if(points < 7500){
-    level = 3;
-    maxGravity = 15;
-    minGravity = 12.5;
-  }
-  else if(points < 10000){
-    level = 4;
-    maxGravity = 16.5;
-    minGravity = 12.5;
-  }
-}
-var levelDisplayCount = 0;
-var count = 0;
+var gameCount = 0;
 /* Main game loop */
 function update() {
-
-
+  points++;
+  gameCount++;
 
   if (checkGameOver()) {
     return;
-    console.log('game over');
   }
 
   requestAnimationFrame(update);
 
-  points++;
-
   setLevel();
 
-  count++;
-  if(!freezeTimer){
-    switch (level) {
-      case 1:
-        if (count % 40 === 0) {
-          generateTriangles();
-        }
-        break;
-      case 2:
-        if(count % 34 === 0){
-          generateTriangles();
-        }
-        break;
-      case 3:
-        if(count % 29 === 0){
-          generateTriangles();
-        }
-        break;
-    }
+  if(freezeTimer > 0){
+    freezeTimer--
   }
 
-  if(count % 150 === 0){
+  if (invincibleTimer > 0) {
+    player.color = 'orange';
+    invincibleTimer--;
+  }
+  else {
+    player.color = 'black';
+    invincible = false;
+  }
+
+
+  if (gameCount % 150 === 0) {
     generatePowerUps();
   }
-  if(freezeTimer){
-    freezeTimer--;
-  }
-
-
   clearCanvas();
   drawGrass();
   movePlayer();
@@ -113,9 +85,51 @@ function update() {
   movePowerUps();
   moveTriangles();
   displayScore();
-  levelDisplayCount++;
-  if(levelDisplayCount < 300){
-    displayLevelOnChange();
+}
+
+function setLevel() {
+  if(points < 5000){
+    level = 1;
+  }
+  else if (points < 10000){
+    level = 2;
+  }
+  else if (points < 15000){
+    level = 3
+  }
+  else if (points < 20000){
+    level = 4;
+  }
+
+  if(!freezeTimer){
+    switch (level) {
+      case 1:
+        if (gameCount % 40 === 0) {
+          generateTriangles();
+        }
+        maxGravity = 13.5;
+        minGravity = 10;
+        break;
+      case 2:
+        maxGravity = 14.5;
+        minGravity = 11.5;
+        if (gameCount % 34 === 0) {
+          generateTriangles();
+        }
+        break;
+      case 3:
+        maxGravity = 15;
+        minGravity = 12.5;
+        if (gameCount % 29 === 0) {
+          generateTriangles();
+        }
+        break;
+
+      case 4:
+        maxGravity = 16.5;
+        minGravity = 12.5;
+        break;
+    }
   }
 
 }
@@ -252,15 +266,21 @@ function createPowerUp(){
   var color = null;
   context.fillStyle = color;
   context.fillRect(startingX, startingY, 25, 25);
-  var typeChance = Math.floor(Math.random() * 2  + 1);
+  var typeChance = Math.floor(Math.random() * 5  + 1);
   switch(typeChance){
     case 1:
+    case 2:
+    case 3:
       type = 'points';
       color = 'red';
       break;
-    case 2:
+    case 4:
       type = 'freeze';
       color = 'lightgreen';
+      break;
+    case 5:
+      type = 'invincible';
+      color = 'orange';
       break;
   }
   fallingPowerUps.push({x: startingX, y: startingY, gravity: gravity, type:type, color:color});
@@ -329,7 +349,6 @@ function checkPowerUpCollision(){
   for(var i = 0; i < fallingPowerUps.length; i++){
     if(player.position > fallingPowerUps[i].x - 15 && player.position < fallingPowerUps[i].x + 40
         && player.height + 20 <= fallingPowerUps[i].y && player.height + 110 > fallingPowerUps[i].y){
-          player.headColor = 'green';
           switch(fallingPowerUps[i].type){
             case 'points':
               points += 500;
@@ -340,67 +359,84 @@ function checkPowerUpCollision(){
               freezeTimer = 100;
               console.log('FREEZE');
               break;
+            case 'invincible':
+              invincible = true;
+              invincibleTimer = 300;
+              break;
           }
           fallingPowerUps.splice(i, 1);
           i--;
-          return false;
+          return true;
         }
   }
-  player.headColor = 'black';
+  // player.color = 'black';
+  return false;
 }
 
 function checkGameOver() {
+  if(invincible){
+    console.log('invincible')
+    return false;
+  }
   for (var i = 0; i < fallingTriangles.length; i++) {
     if (fallingTriangles[i].y <= player.height && fallingTriangles[i].y > player.height + 10) {
       if (player.position > fallingTriangles[i].x + 23 && player.position < fallingTriangles[i].x + 27) {
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
     else if (fallingTriangles[i].y <= player.height + 20 && fallingTriangles[i].y >= player.height + 10) {
       if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 40) {
 
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
     else if (fallingTriangles[i].y <= player.height + 30 && fallingTriangles[i].y >= player.height + 20) {
       if (player.position > fallingTriangles[i].x + 2 && player.position < fallingTriangles[i].x + 49) {
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
     else if (fallingTriangles[i].y <= player.height + 40 && fallingTriangles[i].y >= player.height + 30) {
       if (player.position > fallingTriangles[i].x + -1 && player.position < fallingTriangles[i].x + 52) {
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
     else if (fallingTriangles[i].y <= player.height + 50 && fallingTriangles[i].y >= player.height + 40) {
       if (player.position > fallingTriangles[i].x + -7 && player.position < fallingTriangles[i].x + 57) {
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
     else if (fallingTriangles[i].y <= player.height + 60 && fallingTriangles[i].y >= player.height + 50) {
       if (player.position > fallingTriangles[i].x + -13 && player.position < fallingTriangles[i].x + 63) {
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
     else if (fallingTriangles[i].y <= player.height + 70 && fallingTriangles[i].y >= player.height + 60) {
       if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 50) {
-        player.headColor = 'red';
+        player.color = 'red';
         return true;
       }
     }
   }
-  // player.headColor = 'black';
   return false;
 }
+function spinDrawing(drawPart, angle) {
+  context.save();
+  context.translate(200, 200);
+  context.rotate(angle * Math.PI / 180);
+  drawPart();
+  context.translate(-200, -200);
+  context.restore();
+}
 function drawArms() {
-
+  // context.strokeStyle = 'red';
   context.lineWidth = 3;
+  context.beginPath();
   if (player.direction === 'left') {
     // left arm
     context.moveTo(player.position + 3, player.height + 65);
@@ -439,13 +475,14 @@ function drawArms() {
     context.lineTo(player.position - 10, player.height + 95);
     context.stroke();
   }
+  context.closePath();
 
 }
 
 function drawHead() {
   // x, y, radius, startAngle, endAngle
   context.arc(player.position, canvas.height - 70, 12, 0, 2 * Math.PI)
-  context.fillStyle = player.headColor;
+  context.fillStyle = player.color;
   context.fill();
 }
 function drawBody() {
@@ -458,7 +495,7 @@ function drawBody() {
 }
 function drawLegs() {
   context.lineWidth = 3;
-  context.strokeStyle = player.headColor;
+  context.strokeStyle = player.color;
 
   if (player.direction === 'left') {
     //left Leg
@@ -478,7 +515,7 @@ function drawLegs() {
     context.moveTo(player.position + 1.5, player.height + 90);
     context.lineTo(player.position + 1.5, player.height + 110);
     context.lineWidth = 3;
-    context.strokeStyle = player.headColor;
+    context.strokeStyle = player.color;
     context.stroke();
     // right lowerleg
     context.moveTo(player.position + 1.5, player.height + 110);
@@ -494,7 +531,7 @@ function drawLegs() {
     context.moveTo(player.position, player.height + 90);
     context.lineTo(player.position + 5.5, player.height + 110);
     context.lineWidth = 3.5;
-    context.strokeStyle = player.headColor;
+    context.strokeStyle = player.color;
     context.stroke();
     // right lower leg
     context.moveTo(player.position + 5.5, player.height + 110);
@@ -509,7 +546,7 @@ function drawLegs() {
     context.moveTo(player.position, player.height + 90);
     context.lineTo(player.position - 1.5, player.height + 110);
     context.lineWidth = 3;
-    context.strokeStyle = player.headColor;
+    context.strokeStyle = player.color;
     context.stroke();
     // left lowerleg
     context.moveTo(player.position - 1.5, player.height + 110);
