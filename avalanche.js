@@ -6,14 +6,15 @@ var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
 canvas.width = 650;
 canvas.height = 650;
-
+var points = 0;
 var keyLeft = false;
 var keyRight = false;
 var acceleration = 5.5;
 var decay = 0;
 var level = 1;
 var gravityMultiplier = 0;
-var maxGravity = 15;
+var freezeTimer = 0;
+var maxGravity = 13.5;
 var minGravity = 10;
 var player = {
   headColor: 'black',
@@ -22,6 +23,7 @@ var player = {
   direction: 'left',
 }
 
+var fallingPowerUps = [];
 var fallingTriangles = [];
 
 
@@ -35,42 +37,127 @@ function initializeApp() {
   clearCanvas();
 }
 
+function setLevel(){
+  if(points < 2500){
+    level = 1;
+    maxGravity = 13.5;
+    minGravity = 10;
+  }
+  else if (points < 5000){
+    level = 2;
+    maxGravity = 14.5;
+    minGravity = 11.5;
+  }
+  else if(points < 7500){
+    level = 3;
+    maxGravity = 15;
+    minGravity = 12.5;
+  }
+  else if(points < 10000){
+    level = 4;
+    maxGravity = 16.5;
+    minGravity = 12.5;
+  }
+}
+var levelDisplayCount = 0;
 var count = 0;
 /* Main game loop */
 function update() {
-  requestAnimationFrame(update);
+
+
+
   if (checkGameOver()) {
-    // return;
+    return;
     console.log('game over');
   }
-  count++;
-  switch (level) {
-    case 1:
-      if (count % 50 === 0) {
-        var chance = Math.random();
-        if(chance > .25){
-          var amountOfTriangles = Math.floor(Math.random() * 3 + 1);
-          for (var i = 0; i < amountOfTriangles; i++) {
-            createTriangle();
-          }
-        }
 
-      }
-      break;
+  requestAnimationFrame(update);
+
+  points++;
+
+  setLevel();
+
+  count++;
+  if(!freezeTimer){
+    switch (level) {
+      case 1:
+        if (count % 40 === 0) {
+          generateTriangles();
+        }
+        break;
+      case 2:
+        if(count % 34 === 0){
+          generateTriangles();
+        }
+        break;
+      case 3:
+        if(count % 29 === 0){
+          generateTriangles();
+        }
+        break;
+    }
   }
-  // if(count % 1500 === 0){
-  //   var amountOfTriangles = Math.floor(Math.random() * 4 + 1);
-  //   for (var i = 0; i < amountOfTriangles; i++) {
-  //     createTriangle();
-  //   }
-  // }
+
+  if(count % 150 === 0){
+    generatePowerUps();
+  }
+  if(freezeTimer){
+    freezeTimer--;
+  }
+
+
   clearCanvas();
   drawGrass();
   movePlayer();
+  checkPowerUpCollision();
+  movePowerUps();
   moveTriangles();
+  displayScore();
+  levelDisplayCount++;
+  if(levelDisplayCount < 300){
+    displayLevelOnChange();
+  }
 
 }
 
+function generateTriangles(){
+  var chance = Math.random();
+  if (chance > .25) {
+    var amountOfTriangles = Math.floor(Math.random() * 3 + 1);
+    for (var i = 0; i < amountOfTriangles; i++) {
+      createTriangle();
+    }
+  }
+}
+function generatePowerUps(){
+  var chance = Math.random();
+  if (chance > .25) {
+    var amountOfTriangles = Math.floor(Math.random() * 3 + 1);
+    for (var i = 0; i < amountOfTriangles; i++) {
+      createPowerUp();
+    }
+  }
+}
+function displayLevelOnChange(){
+  context.beginPath();
+  context.font = '35px hydrophilia-iced';
+  context.fillStyle = 'black';
+  context.fillText('Level ' + level, canvas.width/2 - 60, canvas.height/2);
+  context.closePath();
+}
+function displayScore(){
+
+  context.beginPath();
+  context.font = '15px hydrophilia-iced';
+  context.fillStyle = 'black';
+  context.fillText('Level: ' + level, 10, 20 );
+  context.closePath();
+  context.beginPath()
+  context.fillStyle = 'black';
+  context.font = '15px hydrophilia-iced';
+  context.fillText('Points: ' + points, 10, 40);
+  context.closePath();
+}
 function playerDirectionDecay(input) {
   if (input.code === 'ArrowLeft') {
     keyLeft = false;
@@ -132,10 +219,189 @@ function movePlayer() {
   drawArms();
 
 }
-function drawArms(){
+
+function moveTriangles() {
+  for (var i = 0; i < fallingTriangles.length; i++) {
+    var x = fallingTriangles[i].x;
+    var y = fallingTriangles[i].y;
+
+    if (y > canvas.height) {
+      fallingTriangles.splice(i, 1);
+      i--;
+    }
+    else {
+      if(!freezeTimer){
+        fallingTriangles[i].y += fallingTriangles[i].gravity;
+      }
+      context.beginPath();
+      context.moveTo(x, y);
+      context.lineTo(x + 25, y + 50);
+      context.lineTo(x + 50, y);
+      context.fillStyle = 'grey';
+      context.fill();
+      context.closePath();
+    }
+  }
+}
+
+function createPowerUp(){
+  var gravity = randomFloat(minGravity, maxGravity);
+  var startingX = Math.floor(Math.random() * canvas.width);
+  var startingY = -100;
+  var type = null;
+  var color = null;
+  context.fillStyle = color;
+  context.fillRect(startingX, startingY, 25, 25);
+  var typeChance = Math.floor(Math.random() * 2  + 1);
+  switch(typeChance){
+    case 1:
+      type = 'points';
+      color = 'red';
+      break;
+    case 2:
+      type = 'freeze';
+      color = 'lightgreen';
+      break;
+  }
+  fallingPowerUps.push({x: startingX, y: startingY, gravity: gravity, type:type, color:color});
+
+}
+function movePowerUps(){
+  for (var i = 0; i < fallingPowerUps.length; i++){
+    if(fallingPowerUps[i].y > canvas.height){
+      fallingPowerUps.splice(i, 1);
+      i--;
+    }
+    else{
+      fallingPowerUps[i].y += fallingPowerUps[i].gravity;
+      context.fillStyle = fallingPowerUps[i].color;
+      context.fillRect(fallingPowerUps[i].x, fallingPowerUps[i].y, 25, 25);
+    }
+  }
+
+}
+
+function randomFloat(min, max){
+  return Math.random() * (max - min) + min;
+}
+
+function createTriangle() {
+  var gravity = randomFloat(minGravity, maxGravity);
+  var startingX = null;
+  var startingY = null;
+  var validNum = null;
+  var generatorCount = 0;
+  do {
+    generatorCount++;
+    if (generatorCount > 10000) {
+      break;
+    }
+    validNum = true;
+    startingX = Math.floor(Math.random() * canvas.width);
+    for (var i = 0; i < fallingTriangles.length; i++) {
+      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x - 50) {
+        validNum = false;
+      }
+    }
+  } while (!validNum);
+  startingY = -100;
+  context.beginPath();
+  context.moveTo(startingX, startingY);
+  context.lineTo(startingX + 25, startingY + 50);
+  context.lineTo(startingX + 50, startingY);
+  context.fillStyle = 'black';
+  context.fill();
+  fallingTriangles.push({ x: startingX, y: startingY, gravity: gravity });
+}
+
+function clearCanvas() {
+  context.fillStyle = 'white';
+  context.lineWidth = 5;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawGrass() {
+  context.fillStyle = 'chartreuse';
+  context.fillRect(0, canvas.height - 10, canvas.width, 10);
+}
+
+function checkPowerUpCollision(){
+  for(var i = 0; i < fallingPowerUps.length; i++){
+    if(player.position > fallingPowerUps[i].x - 15 && player.position < fallingPowerUps[i].x + 40
+        && player.height + 20 <= fallingPowerUps[i].y && player.height + 110 > fallingPowerUps[i].y){
+          player.headColor = 'green';
+          switch(fallingPowerUps[i].type){
+            case 'points':
+              points += 500;
+              break;
+            case 'freeze':
+              minGravity = 0;
+              maxGravity = 0;
+              freezeTimer = 100;
+              console.log('FREEZE');
+              break;
+          }
+          fallingPowerUps.splice(i, 1);
+          i--;
+          return false;
+        }
+  }
+  player.headColor = 'black';
+}
+
+function checkGameOver() {
+  for (var i = 0; i < fallingTriangles.length; i++) {
+    if (fallingTriangles[i].y <= player.height && fallingTriangles[i].y > player.height + 10) {
+      if (player.position > fallingTriangles[i].x + 23 && player.position < fallingTriangles[i].x + 27) {
+        player.headColor = 'red';
+        return true;
+      }
+    }
+    else if (fallingTriangles[i].y <= player.height + 20 && fallingTriangles[i].y >= player.height + 10) {
+      if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 40) {
+
+        player.headColor = 'red';
+        return true;
+      }
+    }
+    else if (fallingTriangles[i].y <= player.height + 30 && fallingTriangles[i].y >= player.height + 20) {
+      if (player.position > fallingTriangles[i].x + 2 && player.position < fallingTriangles[i].x + 49) {
+        player.headColor = 'red';
+        return true;
+      }
+    }
+    else if (fallingTriangles[i].y <= player.height + 40 && fallingTriangles[i].y >= player.height + 30) {
+      if (player.position > fallingTriangles[i].x + -1 && player.position < fallingTriangles[i].x + 52) {
+        player.headColor = 'red';
+        return true;
+      }
+    }
+    else if (fallingTriangles[i].y <= player.height + 50 && fallingTriangles[i].y >= player.height + 40) {
+      if (player.position > fallingTriangles[i].x + -7 && player.position < fallingTriangles[i].x + 57) {
+        player.headColor = 'red';
+        return true;
+      }
+    }
+    else if (fallingTriangles[i].y <= player.height + 60 && fallingTriangles[i].y >= player.height + 50) {
+      if (player.position > fallingTriangles[i].x + -13 && player.position < fallingTriangles[i].x + 63) {
+        player.headColor = 'red';
+        return true;
+      }
+    }
+    else if (fallingTriangles[i].y <= player.height + 70 && fallingTriangles[i].y >= player.height + 60) {
+      if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 50) {
+        player.headColor = 'red';
+        return true;
+      }
+    }
+  }
+  // player.headColor = 'black';
+  return false;
+}
+function drawArms() {
 
   context.lineWidth = 3;
-  if(player.direction === 'left'){
+  if (player.direction === 'left') {
     // left arm
     context.moveTo(player.position + 3, player.height + 65);
     context.lineTo(player.position - 5, player.height + 85);
@@ -154,7 +420,7 @@ function drawArms(){
     context.lineTo(player.position + 10, player.height + 95);
     context.stroke();
   }
-  else{
+  else {
     // left arm
     context.moveTo(player.position - 3, player.height + 65);
     context.lineTo(player.position + 5, player.height + 85);
@@ -175,22 +441,22 @@ function drawArms(){
   }
 
 }
-function drawHead(){
 
-                // x, y, radius, startAngle, endAngle
+function drawHead() {
+  // x, y, radius, startAngle, endAngle
   context.arc(player.position, canvas.height - 70, 12, 0, 2 * Math.PI)
   context.fillStyle = player.headColor;
   context.fill();
 }
-function drawBody(){
-  if(player.direction === 'left'){
+function drawBody() {
+  if (player.direction === 'left') {
     context.fillRect(player.position - 2, canvas.height - 60, 5, 25);
   }
-  else{
+  else {
     context.fillRect(player.position - 2.5, canvas.height - 60, 5, 25);
   }
 }
-function drawLegs(){
+function drawLegs() {
   context.lineWidth = 3;
   context.strokeStyle = player.headColor;
 
@@ -254,120 +520,4 @@ function drawLegs(){
     context.lineTo(player.position + 1.5, player.height + 121);
     context.stroke();
   }
-}
-
-function moveTriangles() {
-  for (var i = 0; i < fallingTriangles.length; i++) {
-    var x = fallingTriangles[i].x;
-    var y = fallingTriangles[i].y;
-
-    if (y > canvas.height) {
-      fallingTriangles.splice(i, 1);
-      i--;
-    }
-    else{
-
-      fallingTriangles[i].y += fallingTriangles[i].gravity;
-      context.beginPath();
-      context.moveTo(x, y);
-      context.lineTo(x + 25, y + 50);
-      context.lineTo(x + 50, y);
-      context.fillStyle = 'grey';
-      context.fill();
-      context.closePath();
-    }
-  }
-}
-
-function createTriangle() {
-  var gravity = Math.random() * (maxGravity - minGravity) + minGravity;
-  var startingX = null;
-  var startingY = null;
-  var validNum = null;
-  var generatorCount = 0;
-  do {
-    generatorCount++;
-    if (generatorCount > 10000) {
-      console.log('generator coutne xceeded')
-      break;
-    }
-    validNum = true;
-    startingX = Math.floor(Math.random() * canvas.width);
-    for (var i = 0; i < fallingTriangles.length; i++) {
-      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x - 50) {
-        validNum = false;
-      }
-    }
-  } while (!validNum);
-  startingY = -100;
-  context.beginPath();
-  context.moveTo(startingX, startingY);
-  context.lineTo(startingX + 25, startingY + 50);
-  context.lineTo(startingX + 50, startingY);
-  context.fillStyle = 'black';
-  context.fill();
-  fallingTriangles.push({ x: startingX, y: startingY, gravity: gravity });
-}
-
-function clearCanvas() {
-  context.fillStyle = 'white';
-  context.strokeStyle = 'black';
-  context.lineWidth = 5;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.strokeRect(0, 0, canvas.width, canvas.height);
-}
-
-function drawGrass() {
-  context.fillStyle = 'chartreuse';
-  context.fillRect(0, canvas.height - 10, canvas.width, 10);
-}
-
-function checkGameOver() {
-  for (var i = 0; i < fallingTriangles.length; i++) {
-    if (fallingTriangles[i].y <= player.height && fallingTriangles[i].y > player.height + 10) {
-      if (player.position > fallingTriangles[i].x + 23 && player.position < fallingTriangles[i].x + 27) {
-        player.headColor = 'red';
-        return false;
-      }
-    }
-    else if (fallingTriangles[i].y <= player.height + 20 && fallingTriangles[i].y >= player.height + 10) {
-      if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 40) {
-
-        player.headColor = 'red';
-        return false;
-      }
-    }
-    else if (fallingTriangles[i].y <= player.height + 30 && fallingTriangles[i].y >= player.height + 20) {
-      if (player.position > fallingTriangles[i].x + 2 && player.position < fallingTriangles[i].x + 49) {
-        player.headColor = 'red';
-        return false;
-      }
-    }
-    else if (fallingTriangles[i].y <= player.height + 40 && fallingTriangles[i].y >= player.height + 30) {
-      if (player.position > fallingTriangles[i].x + -1 && player.position < fallingTriangles[i].x + 52) {
-        player.headColor = 'red';
-        return false;
-      }
-    }
-    else if (fallingTriangles[i].y <= player.height + 50 && fallingTriangles[i].y >= player.height + 40) {
-      if (player.position > fallingTriangles[i].x + -7 && player.position < fallingTriangles[i].x + 57) {
-        player.headColor = 'red';
-        return false;
-      }
-    }
-    else if (fallingTriangles[i].y <= player.height + 60 && fallingTriangles[i].y >= player.height + 50) {
-      if (player.position > fallingTriangles[i].x + -13 && player.position < fallingTriangles[i].x + 63) {
-        player.headColor = 'red';
-        return false;
-      }
-    }
-    else if (fallingTriangles[i].y <= player.height + 70 && fallingTriangles[i].y >= player.height + 60) {
-      if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 50) {
-        player.headColor = 'red';
-        return false;
-      }
-    }
-  }
-  player.headColor = 'black';
-  return false;
 }
