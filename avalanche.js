@@ -9,23 +9,23 @@ canvas.height = 650;
 
 var keyLeft = false;
 var keyRight = false;
-var acceleration = 3.5;
+var acceleration = 5.5;
 var decay = 0;
 var level = 1;
 var gravityMultiplier = 0;
-var maxGravity = 3.5;
-var minGravity = 3;
+var maxGravity = 15;
+var minGravity = 10;
 var player = {
   headColor: 'black',
   height: canvas.height - 130,
-  position:200, //initial position
+  position: 200, //initial position
   direction: 'left',
 }
 
 var fallingTriangles = [];
 
 
-function initializeApp(){
+function initializeApp() {
   document.body.append(canvas);
 
 
@@ -37,20 +37,24 @@ function initializeApp(){
 
 var count = 0;
 /* Main game loop */
-function update(){
+function update() {
   requestAnimationFrame(update);
-  if(checkGameOver()){
+  if (checkGameOver()) {
     // return;
     console.log('game over');
   }
   count++;
-  switch(level){
+  switch (level) {
     case 1:
-      if (count % 100 === 0) {
-        var amountOfTriangles = Math.floor(Math.random() * 4 + 1);
-        for (var i = 0; i < amountOfTriangles; i++) {
-          createTriangle();
+      if (count % 50 === 0) {
+        var chance = Math.random();
+        if(chance > .25){
+          var amountOfTriangles = Math.floor(Math.random() * 3 + 1);
+          for (var i = 0; i < amountOfTriangles; i++) {
+            createTriangle();
+          }
         }
+
       }
       break;
   }
@@ -61,87 +65,208 @@ function update(){
   //   }
   // }
   clearCanvas();
+  drawGrass();
   movePlayer();
   moveTriangles();
-  drawGrass();
+
 }
 
-function playerDirectionDecay(input){
-  if(input.code === 'ArrowLeft'){
+function playerDirectionDecay(input) {
+  if (input.code === 'ArrowLeft') {
     keyLeft = false;
   }
-  else if(input.code === 'ArrowRight'){
+  else if (input.code === 'ArrowRight') {
     keyRight = false;
   }
 }
 
-function handleUserInput(input){
-  if(input.code === "ArrowLeft"){
+function handleUserInput(input) {
+  if (input.code === "ArrowLeft") {
     keyLeft = true;
     player.direction = 'left';
   }
-  else if(input.code === "ArrowRight"){
+  else if (input.code === "ArrowRight") {
     keyRight = true;
     player.direction = 'right';
   }
 }
 
-function isOutOfBounds(){
-  if(player.position > canvas.width - 8 && player.direction === 'right'){
+function isOutOfBounds() {
+  if (player.position > canvas.width - 8 && player.direction === 'right') {
     return true;
   }
-  else if(player.position < 8 && player.direction === 'left'){
+  else if (player.position < 8 && player.direction === 'left') {
     return true;
   }
   return false;
 }
 
-function movePlayer(){
-  if(!isOutOfBounds()){
-    if(keyLeft){
+function movePlayer() {
+  if (!isOutOfBounds()) {
+    if (keyLeft) {
       decay = acceleration;
-      player.position  -= acceleration;
+      player.position -= acceleration;
     }
-    else if(keyRight){
+    else if (keyRight) {
       decay = acceleration;
       player.position += acceleration;
     }
-    else if(!keyRight && !keyLeft){
-      if(player.direction === 'left'){
+    else if (!keyRight && !keyLeft) {
+      if (player.direction === 'left') {
         player.position -= decay;
       }
-      else if (player.direction === 'right'){
+      else if (player.direction === 'right') {
         player.position += decay;
       }
-      if(decay > 0){
-        decay -= .1;
+      if (decay > 0) {
+        decay -= .25;
       }
     }
   }
-
   context.beginPath();
-              // x, y, radius, startAngle, endAngle
+  drawHead();
+  drawBody();
+
+  drawLegs();
+  context.closePath();
+  drawArms();
+
+}
+function drawArms(){
+
+  context.lineWidth = 3;
+  if(player.direction === 'left'){
+    // left arm
+    context.moveTo(player.position + 3, player.height + 65);
+    context.lineTo(player.position - 5, player.height + 85);
+    context.stroke();
+    // left lower arm
+    context.moveTo(player.position - 5, player.height + 85);
+    context.lineTo(player.position - 14, player.height + 88);
+    context.stroke();
+
+    // right arm
+    context.moveTo(player.position - 3, player.height + 68);
+    context.lineTo(player.position + 10, player.height + 85);
+    context.stroke();
+    //right lower arm
+    context.moveTo(player.position + 10, player.height + 85);
+    context.lineTo(player.position + 10, player.height + 95);
+    context.stroke();
+  }
+  else{
+    // left arm
+    context.moveTo(player.position - 3, player.height + 65);
+    context.lineTo(player.position + 5, player.height + 85);
+    context.stroke();
+    // left lower arm
+    context.moveTo(player.position + 5, player.height + 85);
+    context.lineTo(player.position + 14, player.height + 88);
+    context.stroke();
+
+    // right arm
+    context.moveTo(player.position + 3, player.height + 68);
+    context.lineTo(player.position - 10, player.height + 85);
+    context.stroke();
+    //right lower arm
+    context.moveTo(player.position - 10, player.height + 85);
+    context.lineTo(player.position - 10, player.height + 95);
+    context.stroke();
+  }
+
+}
+function drawHead(){
+
+                // x, y, radius, startAngle, endAngle
   context.arc(player.position, canvas.height - 70, 12, 0, 2 * Math.PI)
   context.fillStyle = player.headColor;
   context.fill();
-  context.fillRect(player.position - 2 , canvas.height - 60, 5, 25);
-  context.beginPath();
-  context.fillRect(player.position + 2.5, canvas.height - 40, 3, 30);
-  // context.rotate(20 * Math.PI / 180)
-  context.closePath()
-  context.fillRect(player.position - 3, canvas.height - 40, 3, 30);
+}
+function drawBody(){
+  if(player.direction === 'left'){
+    context.fillRect(player.position - 2, canvas.height - 60, 5, 25);
+  }
+  else{
+    context.fillRect(player.position - 2.5, canvas.height - 60, 5, 25);
+  }
+}
+function drawLegs(){
+  context.lineWidth = 3;
+  context.strokeStyle = player.headColor;
 
+  if (player.direction === 'left') {
+    //left Leg
+    context.moveTo(player.position, player.height + 90);
+    context.lineTo(player.position - 5, player.height + 110);
+    context.stroke();
+    // left lower leg
+    context.moveTo(player.position - 5, player.height + 110);
+    context.lineTo(player.position - 4, player.height + 120);
+    context.stroke();
+    // left foot
+    context.moveTo(player.position - 4, player.height + 120);
+    context.lineTo(player.position - 10, player.height + 120);
+    context.stroke();
+
+    // right leg
+    context.moveTo(player.position + 1.5, player.height + 90);
+    context.lineTo(player.position + 1.5, player.height + 110);
+    context.lineWidth = 3;
+    context.strokeStyle = player.headColor;
+    context.stroke();
+    // right lowerleg
+    context.moveTo(player.position + 1.5, player.height + 110);
+    context.lineTo(player.position + 3.5, player.height + 120);
+    context.stroke();
+    // right foot
+    context.moveTo(player.position + 4.5, player.height + 120);
+    context.lineTo(player.position - 1.5, player.height + 121);
+    context.stroke();
+  }
+  else { //facing right
+    // right leg
+    context.moveTo(player.position, player.height + 90);
+    context.lineTo(player.position + 5.5, player.height + 110);
+    context.lineWidth = 3.5;
+    context.strokeStyle = player.headColor;
+    context.stroke();
+    // right lower leg
+    context.moveTo(player.position + 5.5, player.height + 110);
+    context.lineTo(player.position + 4.5, player.height + 120);
+    context.stroke();
+    // right foot
+    context.moveTo(player.position + 3.5, player.height + 120);
+    context.lineTo(player.position + 10.5, player.height + 120);
+    context.stroke();
+
+    // left leg
+    context.moveTo(player.position, player.height + 90);
+    context.lineTo(player.position - 1.5, player.height + 110);
+    context.lineWidth = 3;
+    context.strokeStyle = player.headColor;
+    context.stroke();
+    // left lowerleg
+    context.moveTo(player.position - 1.5, player.height + 110);
+    context.lineTo(player.position - 3.5, player.height + 120);
+    context.stroke();
+    // left foot
+    context.moveTo(player.position - 5.5, player.height + 120);
+    context.lineTo(player.position + 1.5, player.height + 121);
+    context.stroke();
+  }
 }
 
-
-function moveTriangles(){
-  for(var i = 0; i < fallingTriangles.length; i++){
+function moveTriangles() {
+  for (var i = 0; i < fallingTriangles.length; i++) {
     var x = fallingTriangles[i].x;
     var y = fallingTriangles[i].y;
-    if(y > canvas.height){
+
+    if (y > canvas.height) {
       fallingTriangles.splice(i, 1);
+      i--;
     }
     else{
+
       fallingTriangles[i].y += fallingTriangles[i].gravity;
       context.beginPath();
       context.moveTo(x, y);
@@ -149,29 +274,31 @@ function moveTriangles(){
       context.lineTo(x + 50, y);
       context.fillStyle = 'grey';
       context.fill();
+      context.closePath();
     }
   }
 }
 
-function createTriangle(){
+function createTriangle() {
   var gravity = Math.random() * (maxGravity - minGravity) + minGravity;
   var startingX = null;
   var startingY = null;
   var validNum = null;
   var generatorCount = 0;
-  do{
+  do {
     generatorCount++;
-    if(generatorCount > 1000){
+    if (generatorCount > 10000) {
+      console.log('generator coutne xceeded')
       break;
     }
     validNum = true;
     startingX = Math.floor(Math.random() * canvas.width);
-    for(var i = 0; i < fallingTriangles.length; i++){
-      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x - 50){
+    for (var i = 0; i < fallingTriangles.length; i++) {
+      if (startingX < fallingTriangles[i].x + 50 && startingX > fallingTriangles[i].x - 50) {
         validNum = false;
       }
     }
-  }while(!validNum);
+  } while (!validNum);
   startingY = -100;
   context.beginPath();
   context.moveTo(startingX, startingY);
@@ -179,7 +306,7 @@ function createTriangle(){
   context.lineTo(startingX + 50, startingY);
   context.fillStyle = 'black';
   context.fill();
-  fallingTriangles.push({x: startingX, y: startingY, gravity: gravity});
+  fallingTriangles.push({ x: startingX, y: startingY, gravity: gravity });
 }
 
 function clearCanvas() {
@@ -190,23 +317,23 @@ function clearCanvas() {
   context.strokeRect(0, 0, canvas.width, canvas.height);
 }
 
-function drawGrass(){
-  context.fillStyle = 'green';
+function drawGrass() {
+  context.fillStyle = 'chartreuse';
   context.fillRect(0, canvas.height - 10, canvas.width, 10);
 }
 
-function checkGameOver(){
-  for(var i = 0; i < fallingTriangles.length; i++){
-    if (fallingTriangles[i].y <= player.height && fallingTriangles[i].y > player.height + 10){
+function checkGameOver() {
+  for (var i = 0; i < fallingTriangles.length; i++) {
+    if (fallingTriangles[i].y <= player.height && fallingTriangles[i].y > player.height + 10) {
       if (player.position > fallingTriangles[i].x + 23 && player.position < fallingTriangles[i].x + 27) {
         player.headColor = 'red';
         return false;
       }
     }
-    else if(fallingTriangles[i].y <= player.height + 20 && fallingTriangles[i].y >= player.height + 10){
-      if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 40){
+    else if (fallingTriangles[i].y <= player.height + 20 && fallingTriangles[i].y >= player.height + 10) {
+      if (player.position > fallingTriangles[i].x + 10 && player.position < fallingTriangles[i].x + 40) {
 
-        player.headColor= 'red';
+        player.headColor = 'red';
         return false;
       }
     }
@@ -244,7 +371,3 @@ function checkGameOver(){
   player.headColor = 'black';
   return false;
 }
-
-
-// if the tip of the triangle on head
-    // x + 25, y: 520
