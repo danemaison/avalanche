@@ -1,3 +1,12 @@
+class Player {
+  constructor(color, height, position, direction) {
+    this.color = color;
+    this.height = height;
+    this.position = position;
+    this.direction = direction
+  }
+}
+
 document.addEventListener('DOMContentLoaded', initializeApp);
 document.addEventListener('keydown', handleUserInput);
 document.addEventListener('keyup', playerDirectionDecay);
@@ -27,15 +36,8 @@ var minGravity = 10;
 var fallingPowerUps = [];
 var fallingTriangles = [];
 
-var player = {
-  color: 'black',
-  height: canvas.height - 130,
-  position: 200, //initial position
-  direction: 'left',
-}
 
-
-
+var player = new Player('black', canvas.height - 130, 200, 'left');
 
 function initializeApp() {
   document.body.append(canvas);
@@ -426,11 +428,15 @@ function checkGameOver() {
   return false;
 }
 function spinDrawing(drawPart, angle) {
+  console.log("spinDrawingCalled");
+
   context.save();
-  context.translate(200, 200);
+  context.beginPath();
+  context.translate(500, 0);
   context.rotate(angle * Math.PI / 180);
   drawPart();
-  context.translate(-200, -200);
+  context.translate(-500, 0);
+  context.closePath();
   context.restore();
 }
 function drawArms() {
@@ -480,10 +486,12 @@ function drawArms() {
 }
 
 function drawHead() {
+
   // x, y, radius, startAngle, endAngle
   context.arc(player.position, canvas.height - 70, 12, 0, 2 * Math.PI)
   context.fillStyle = player.color;
   context.fill();
+  console.log("Draw head completed");
 }
 function drawBody() {
   if (player.direction === 'left') {
