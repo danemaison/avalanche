@@ -7,11 +7,19 @@ class Player {
   }
 }
 
-
 document.addEventListener('DOMContentLoaded', initializeApp);
 document.addEventListener('keydown', handleUserInput);
 document.addEventListener('keyup', playerDirectionDecay);
 
+function loadDeath(){
+  var sprites = [];
+  for (var i = 1; i < 70; i++){
+    var image = new Image();
+    image.src = `death-sprites/${i}.png`;
+    sprites.push(image);
+  }
+  return sprites;
+}
 function loadSprites(){
   var sprites = {left:[], right:[]};
   for(let i = 0; i < 30; i++){
@@ -25,7 +33,7 @@ function loadSprites(){
   return sprites;
 }
 
-
+var deathAnimation = loadDeath();
 var sprites = loadSprites();
 var spriteIndex = 0;
 
@@ -58,9 +66,28 @@ var fallingTriangles = [];
 var player = new Player(canvas.height - 130, 200, 'left');
 
 function initializeApp() {
+  keyLeft = false;
+  keyRight = false;
+
+  points = 0;
+
+  acceleration = 5.5;
+  decay = 0;
+
+  // var gravityMultiplier = 0;
+  freezeTimer = 0;
+  invincibleTimer = 0;
+  invincible = false;
+
+  level = 1;
+  maxGravity = 13.5;
+  minGravity = 10;
+
+  fallingPowerUps = [];
+  fallingTriangles = [];
+
   document.body.append(canvas);
   requestAnimationFrame(update);
-
 }
 
 var gameCount = 0;
@@ -70,6 +97,7 @@ function update() {
   gameCount++;
 
   if (checkGameOver()) {
+    drawDeath();
     return;
   }
 
@@ -327,7 +355,7 @@ function moveTriangles() {
       i--;
     }
     else {
-      if(!freezeTimer){
+      if(!freezeTimer && !checkGameOver()){
         fallingTriangles[i].y += fallingTriangles[i].gravity;
       }
       context.beginPath();
@@ -424,7 +452,6 @@ function clearCanvas() {
 }
 
 function drawGrass() {
-  console.log('drawing grass')
   if(level === 3){
     context.fillStyle = 'aqua';
   }
@@ -446,7 +473,6 @@ function checkPowerUpCollision(){
               minGravity = 0;
               maxGravity = 0;
               freezeTimer = 100;
-              console.log('FREEZE');
               break;
             case 'invincible':
               invincible = true;
@@ -464,7 +490,6 @@ function checkPowerUpCollision(){
 
 function checkGameOver() {
   if(invincible){
-    console.log('invincible')
     return false;
   }
   for (var i = 0; i < fallingTriangles.length; i++) {
@@ -506,4 +531,23 @@ function checkGameOver() {
     }
   }
   return false;
+}
+
+var deathCount = 0;
+function drawDeath(){
+    clearCanvas();
+    drawGrass();
+    moveTriangles();
+    displayScore();
+    if(deathAnimation[deathCount + 1 ]){
+      requestAnimationFrame(drawDeath);
+      context.drawImage(deathAnimation[deathCount], player.position - 40, player.height + 45, 225, 110);
+      deathCount++
+    }
+    else{
+      context.drawImage(deathAnimation[deathCount], player.position - 40, player.height + 45, 225, 110);
+      return false;
+    }
+
+
 }
