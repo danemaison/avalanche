@@ -8,8 +8,9 @@ var spriteIndex = 0;
 
 var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
-canvas.width = 650;
-canvas.height = 650;
+canvas.width = window.innerWidth / 2;
+// canvas.width = 650;
+canvas.height = window.innerHeight / 1.25;
 
 var keyLeft = false;
 var keyRight = false;
