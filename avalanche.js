@@ -1,37 +1,6 @@
-class Player {
-  constructor(height, position, direction, sprites) {
-    this.image = sprites
-    this.height = height;
-    this.position = position;
-    this.direction = direction
-  }
-}
-
 document.addEventListener('DOMContentLoaded', initializeApp);
 document.addEventListener('keydown', handleUserInput);
 document.addEventListener('keyup', playerDirectionDecay);
-
-function loadDeath(){
-  var sprites = [];
-  for (var i = 1; i < 70; i++){
-    var image = new Image();
-    image.src = `death-sprites/${i}.png`;
-    sprites.push(image);
-  }
-  return sprites;
-}
-function loadSprites(){
-  var sprites = {left:[], right:[]};
-  for(let i = 0; i < 30; i++){
-      sprites.left[i] = new Image();
-      sprites.left[i].src = `left-sprites/${i+1}.png`;
-  }
-  for(let i = 0; i < 30; i++){
-    sprites.right[i] = new Image();
-    sprites.right[i].src = `right-sprites/${i + 1}.png`;
-  }
-  return sprites;
-}
 
 var deathAnimation = loadDeath();
 var sprites = loadSprites();
@@ -63,34 +32,21 @@ var fallingPowerUps = [];
 var fallingTriangles = [];
 
 
-var player = new Player(canvas.height - 130, 200, 'left');
+var player = {
+  position: 200,
+  direction: 'left',
+  height: canvas.height - 130,
+
+}
 
 function initializeApp() {
-  keyLeft = false;
-  keyRight = false;
-
-  points = 0;
-
-  acceleration = 5.5;
-  decay = 0;
-
-  // var gravityMultiplier = 0;
-  freezeTimer = 0;
-  invincibleTimer = 0;
-  invincible = false;
-
-  level = 1;
-  maxGravity = 13.5;
-  minGravity = 10;
-
-  fallingPowerUps = [];
-  fallingTriangles = [];
-
   document.body.append(canvas);
+
   requestAnimationFrame(update);
 }
 
 var gameCount = 0;
+
 /* Main game loop */
 function update() {
   points++;
@@ -110,14 +66,11 @@ function update() {
   }
 
   if (invincibleTimer > 0) {
-    player.color = 'orange';
     invincibleTimer--;
   }
   else {
-    player.color = 'black';
     invincible = false;
   }
-
 
   if (gameCount % 150 === 0) {
     generatePowerUps();
@@ -130,7 +83,6 @@ function update() {
   movePowerUps();
   moveTriangles();
   displayScore();
-
 
 }
 
@@ -232,13 +184,6 @@ function generatePowerUps(){
     }
   }
 }
-function displayText(){
-  context.beginPath();
-  context.font = '35px hydrophilia-iced';
-  context.fillStyle = 'black';
-  context.fillText('Level ' + level, canvas.width/2 - 60, canvas.height/2);
-  context.closePath();
-}
 
 function displayScore(){
   context.beginPath();
@@ -277,7 +222,7 @@ function isOutOfBounds() {
   if (player.position > canvas.width - 8 && player.direction === 'right') {
     return true;
   }
-  else if (player.position < 8 && player.direction === 'left') {
+  else if (player.position < 15 && player.direction === 'left') {
     return true;
   }
   return false;
@@ -307,10 +252,10 @@ function movePlayer() {
         else{
           decay -= .25;
         }
-
       }
     }
   }
+
   if(keyLeft || keyRight){
     if (sprites.left[spriteIndex + 1]) {
       spriteIndex++
@@ -332,6 +277,7 @@ function movePlayer() {
       }
     }
   }
+
   if(invincible){
     context.globalAlpha = .3;
   }
@@ -341,7 +287,8 @@ function movePlayer() {
   else{
     context.drawImage(sprites.right[spriteIndex], player.position - 40, player.height + 35, 75, 100);
   }
-  context.globalAlpha = 1;
+
+  context.globalAlpha = 1; // reset
 }
 
 
@@ -394,9 +341,10 @@ function createPowerUp(){
       color = 'orange';
       break;
   }
-  fallingPowerUps.push({x: startingX, y: startingY, gravity: gravity, type:type, color:color});
 
+  fallingPowerUps.push({x: startingX, y: startingY, gravity: gravity, type:type, color:color});
 }
+
 function movePowerUps(){
   for (var i = 0; i < fallingPowerUps.length; i++){
     if(fallingPowerUps[i].y > canvas.height){
@@ -484,7 +432,6 @@ function checkPowerUpCollision(){
           return true;
         }
   }
-  // player.color = 'black';
   return false;
 }
 
@@ -539,7 +486,7 @@ function drawDeath(){
     drawGrass();
     moveTriangles();
     displayScore();
-    if(deathAnimation[deathCount + 1 ]){
+    if(deathAnimation[deathCount + 1]){
       requestAnimationFrame(drawDeath);
       context.drawImage(deathAnimation[deathCount], player.position - 40, player.height + 45, 225, 110);
       deathCount++
@@ -548,6 +495,27 @@ function drawDeath(){
       context.drawImage(deathAnimation[deathCount], player.position - 40, player.height + 45, 225, 110);
       return false;
     }
+}
 
+function loadDeath() {
+  var sprites = [];
+  for (var i = 1; i < 70; i++) {
+    var image = new Image();
+    image.src = `death-sprites/${i}.png`;
+    sprites.push(image);
+  }
+  return sprites;
+}
 
+function loadSprites() {
+  var sprites = { left: [], right: [] };
+  for (let i = 0; i < 30; i++) {
+    sprites.left[i] = new Image();
+    sprites.left[i].src = `left-sprites/${i + 1}.png`;
+  }
+  for (let i = 0; i < 30; i++) {
+    sprites.right[i] = new Image();
+    sprites.right[i].src = `right-sprites/${i + 1}.png`;
+  }
+  return sprites;
 }
