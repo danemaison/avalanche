@@ -9,8 +9,14 @@ var spriteIndex = 0;
 var canvas = document.createElement('canvas');
 var context = canvas.getContext('2d');
 canvas.width = window.innerWidth / 2;
+
 // canvas.width = 650;
 canvas.height = window.innerHeight / 1.25;
+if (canvas.height < 550) {
+  document.body.style.zoom = .8
+  canvas.height = window.innerHeight ;
+  canvas.width = window.innerWidth / 2;
+}
 
 var keyLeft = false;
 var keyRight = false;
